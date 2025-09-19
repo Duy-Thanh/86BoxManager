@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ComponentFactory.Krypton.Toolkit;
+using System;
 using System.IO;
 using System.Windows.Forms;
 
 namespace _86boxManager
 {
-    public partial class dlgAddVM : Form
+    public partial class dlgAddVM : KryptonForm
     {
         private frmMain main = (frmMain)Application.OpenForms["frmMain"]; //Instance of frmMain
         private bool existingVM = false; //Is this importing an existing VM or not

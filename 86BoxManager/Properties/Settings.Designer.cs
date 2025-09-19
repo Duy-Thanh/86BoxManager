@@ -12,7 +12,7 @@ namespace _86boxManager.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.7.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -104,6 +104,32 @@ namespace _86boxManager.Properties {
             }
             set {
                 this["PathColWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x" +
+            "0007)")]
+        public string Copyright {
+            get {
+                return ((string)(this["Copyright"]));
+            }
+            set {
+                this["Copyright"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x" +
+            "0007)")]
+        public string Trademark {
+            get {
+                return ((string)(this["Trademark"]));
+            }
+            set {
+                this["Trademark"] = value;
             }
         }
     }

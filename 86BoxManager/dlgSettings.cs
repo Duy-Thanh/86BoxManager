@@ -1,13 +1,16 @@
-﻿using Microsoft.Win32;
+﻿using ComponentFactory.Krypton.Toolkit;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
+using SaveFileDialog = System.Windows.Forms.SaveFileDialog;
+
 namespace _86boxManager
 {
-    public partial class dlgSettings : Form
+    public partial class dlgSettings : KryptonForm
     {
         private bool settingsChanged = false; //Keeps track of unsaved changes
 

@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ComponentFactory.Krypton.Toolkit;
+using System;
 using System.IO;
 using System.Windows.Forms;
 
 namespace _86boxManager
 {
-    public partial class dlgCloneVM : Form
+    public partial class dlgCloneVM : KryptonForm
     {
         private string oldPath; //Path of the VM to be cloned
         private frmMain main = (frmMain)Application.OpenForms["frmMain"]; //Instance of frmMain

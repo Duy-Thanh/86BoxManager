@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ComponentFactory.Krypton.Toolkit;
+using System;
 using System.IO;
 using System.Windows.Forms;
 
 namespace _86boxManager
 {
-    public partial class dlgEditVM : Form
+    public partial class dlgEditVM : KryptonForm
     {
         private frmMain main = (frmMain)Application.OpenForms["frmMain"]; //Instance of frmMain
         private VM vm = null; //VM to be edited

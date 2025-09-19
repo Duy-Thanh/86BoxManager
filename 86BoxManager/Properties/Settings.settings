@@ -23,5 +23,11 @@
     <Setting Name="PathColWidth" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">217</Value>
     </Setting>
+    <Setting Name="Copyright" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)</Value>
+    </Setting>
+    <Setting Name="Trademark" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

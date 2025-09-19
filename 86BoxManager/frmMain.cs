@@ -9,10 +9,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Windows.Forms;
+using ComponentFactory.Krypton;
+using ComponentFactory.Krypton.Toolkit;
 
 namespace _86boxManager
 {
-    public partial class frmMain : Form
+    public partial class frmMain : KryptonForm
     {
         //Win32 API imports
         //Posts a message to the window with specified handle - DOES NOT WAIT FOR THE RECIPIENT TO PROCESS THE MESSAGE!!!
