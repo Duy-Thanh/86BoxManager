@@ -830,13 +830,15 @@ namespace _86boxManager
         private void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
             VM vm = (VM)lstVMs.SelectedItems[0].Tag;
-            if (vm.Status == VM.STATUS_STOPPED)
+            switch (vm.Status)
             {
-                VMStart();
-            }
-            else if (vm.Status == VM.STATUS_RUNNING || vm.Status == VM.STATUS_PAUSED)
-            {
-                VMRequestStop();
+                case VM.STATUS_STOPPED:
+                    VMStart();
+                    break;
+                case VM.STATUS_RUNNING:
+                case VM.STATUS_PAUSED:
+                    VMRequestStop();
+                    break;
             }
         }
 
@@ -962,24 +964,19 @@ namespace _86boxManager
         //For double clicking an item, do something based on VM status
         private void lstVMs_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            if (e.Button != MouseButtons.Left) return;
+
+            var item = lstVMs.GetItemAt(e.X, e.Y);
+            if (item == null) return;
+
+            var vm = item.Tag as VM;
+            if (vm == null) return;
+
+            switch (vm.Status)
             {
-                if (lstVMs.SelectedItems[0].Bounds.Contains(e.Location))
-                {
-                    VM vm = (VM)lstVMs.SelectedItems[0].Tag;
-                    if (vm.Status == VM.STATUS_STOPPED)
-                    {
-                        VMStart();
-                    }
-                    else if (vm.Status == VM.STATUS_RUNNING)
-                    {
-                        VMRequestStop();
-                    }
-                    else if (vm.Status == VM.STATUS_PAUSED)
-                    {
-                        VMResume();
-                    }
-                }
+                case VM.STATUS_STOPPED: VMStart(); break;
+                case VM.STATUS_RUNNING: VMRequestStop(); break;
+                case VM.STATUS_PAUSED: VMResume(); break;
             }
         }
 
@@ -1037,29 +1034,16 @@ namespace _86boxManager
         {
             try
             {
-                RegistryKey regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box\Virtual Machines", true);
-                if (regkey == null) //Regkey doesn't exist yet
+                using (var regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box\Virtual Machines", true)
+                    ?? Registry.CurrentUser.CreateSubKey(@"SOFTWARE\86Box\Virtual Machines"))
                 {
-                    regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box", true);
-                    regkey.CreateSubKey(@"Virtual Machines");
-                    return false;
-                }
-
-                //VM's registry value doesn't exist yet
-                if (regkey.GetValue(name) == null)
-                {
-                    regkey.Close();
-                    return false;
-                }
-                else
-                {
-                    regkey.Close();
-                    return true;
+                    return regkey.GetValue(name) != null;
                 }
             }
-            catch(Exception ex)
+            catch
             {
-                MessageBox.Show("Could not load the virtual machine information from the registry. Make sure you have the required permissions and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Could not load VM info from registry. Check permissions.",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
         }
