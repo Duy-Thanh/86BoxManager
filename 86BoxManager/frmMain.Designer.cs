@@ -495,7 +495,6 @@
             this.PaletteMode = ComponentFactory.Krypton.Toolkit.PaletteMode.SparkleBlue;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "86Box Manager";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.Resize += new System.EventHandler(this.frmMain_Resize);
             this.cmsVM.ResumeLayout(false);

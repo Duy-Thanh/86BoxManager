@@ -71,7 +71,11 @@ namespace _86boxManager
         private bool logging = false; //Logging enabled for 86Box.exe (-L parameter)?
         private string logpath = ""; //Path to log file
         private bool gridlines = false; //Are grid lines enabled for VM list?
+        private static string DefaultExePath() =>
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "86Box\\");
 
+        private static string DefaultCfgPath() =>
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "86Box VMs\\");
         public frmMain()
         {
             InitializeComponent();
@@ -91,6 +95,72 @@ namespace _86boxManager
         {
             if (MessageBox.Show("You are closing 86BoxManager.\n\nAny changes you made will be lost. Please save your changes before exiting 86BoxManager\n\nDo you want to exit 86BoxManager?", "Exit 86BoxManager", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
+                int vmCount = 0; //Number of running VMs
+
+                //Close to tray
+                if (e.CloseReason == CloseReason.UserClosing && closeTray)
+                {
+                    e.Cancel = true;
+                    trayIcon.Visible = true;
+                    WindowState = FormWindowState.Minimized;
+                    Hide();
+                }
+                else
+                {
+                    foreach (ListViewItem item in lstVMs.Items)
+                    {
+                        VM vm = (VM)item.Tag;
+                        if (vm.Status != VM.STATUS_STOPPED && Visible)
+                        {
+                            vmCount++;
+                        }
+                    }
+                }
+
+                //If there are running VMs, display the warning and stop the VMs if user says so
+                if (vmCount > 0)
+                {
+                    e.Cancel = true;
+                    DialogResult = MessageBox.Show("Some virtual machines are still running. It's recommended you stop them first before closing 86Box Manager. Do you want to stop them now?", "Virtual machines are still running", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                    if (DialogResult == DialogResult.Yes)
+                    {
+                        foreach (ListViewItem lvi in lstVMs.Items)
+                        {
+                            lstVMs.SelectedItems.Clear(); //To prevent weird stuff
+                            VM vm = (VM)lvi.Tag;
+                            if (vm.Status != VM.STATUS_STOPPED)
+                            {
+                                lvi.Focused = true;
+                                lvi.Selected = true;
+                                VMForceStop(); //Tell the VM to shut down without confirmation
+                                Process p = Process.GetProcessById(vm.Pid);
+                                p.WaitForExit(500); //Wait 500 milliseconds for each VM to close
+                            }
+                        }
+
+                    }
+                    else if (DialogResult == DialogResult.Cancel)
+                    {
+                        return;
+                    }
+
+                    e.Cancel = false;
+                }
+
+                //Save main window's state, size and position
+                //BUGBUG: Restoring these on startup causes anchor problems, so we're not doing it anymore...
+                /*Settings.Default.WindowState = WindowState;
+                Settings.Default.WindowSize = Size;
+                Settings.Default.WindowPosition = Location;*/
+
+                //Save listview column widths
+                Settings.Default.NameColWidth = clmName.Width;
+                Settings.Default.StatusColWidth = clmStatus.Width;
+                Settings.Default.DescColWidth = clmDesc.Width;
+                Settings.Default.PathColWidth = clmPath.Width;
+
+                Settings.Default.Save();
+
                 e.Cancel = false;
             }
             else
@@ -277,82 +347,85 @@ namespace _86boxManager
         {
             try
             {
-                //Try to load the settings from registry, if it fails fallback to default values
-                RegistryKey regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box", true);
-
-                if (regkey == null)
+                using (var regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box", true))
                 {
-                    MessageBox.Show("86Box Manager settings could not be loaded. This is normal if you're running 86Box Manager for the first time. Default values will be used.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (regkey == null)
+                    {
+                        MessageBox.Show(
+                            "86Box Manager settings could not be loaded. This is normal if you're running it for the first time. Default values will be used.",
+                            "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
-                    //Create the key and reopen it for write access
-                    Registry.CurrentUser.CreateSubKey(@"SOFTWARE\86Box");
-                    regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box", true);
-                    regkey.CreateSubKey("Virtual Machines");
-
-                    cfgpath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\86Box VMs\";
-                    exepath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) + @"\86Box\";
-                    minimize = false;
-                    showConsole = true;
-                    minimizeTray = false;
-                    closeTray = false;
-                    logging = false;
-                    logpath = "";
-                    gridlines = false;
-                    sortColumn = 0;
-                    sortOrder = SortOrder.Ascending;
-
-                    lstVMs.GridLines = false;
-                    VMSort(sortColumn, sortOrder);
-
-                    //Defaults must also be written to the registry
-                    regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box", true);
-                    regkey.SetValue("EXEdir", exepath, RegistryValueKind.String);
-                    regkey.SetValue("CFGdir", cfgpath, RegistryValueKind.String);
-                    regkey.SetValue("MinimizeOnVMStart", minimize, RegistryValueKind.DWord);
-                    regkey.SetValue("ShowConsole", showConsole, RegistryValueKind.DWord);
-                    regkey.SetValue("MinimizeToTray", minimizeTray, RegistryValueKind.DWord);
-                    regkey.SetValue("CloseToTray", closeTray, RegistryValueKind.DWord);
-                    regkey.SetValue("EnableLogging", logging, RegistryValueKind.DWord);
-                    regkey.SetValue("LogPath", logpath, RegistryValueKind.String);
-                    regkey.SetValue("EnableGridLines", gridlines, RegistryValueKind.DWord);
-                    regkey.SetValue("SortColumn", sortColumn, RegistryValueKind.DWord);
-                    regkey.SetValue("SortOrder", sortOrder, RegistryValueKind.DWord);
-                }
-                else
-                {
-                    exepath = regkey.GetValue("EXEdir").ToString();
-                    cfgpath = regkey.GetValue("CFGdir").ToString();
-                    minimize = Convert.ToBoolean(regkey.GetValue("MinimizeOnVMStart"));
-                    showConsole = Convert.ToBoolean(regkey.GetValue("ShowConsole"));
-                    minimizeTray = Convert.ToBoolean(regkey.GetValue("MinimizeToTray"));
-                    closeTray = Convert.ToBoolean(regkey.GetValue("CloseToTray"));
-                    logpath = regkey.GetValue("LogPath").ToString();
-                    logging = Convert.ToBoolean(regkey.GetValue("EnableLogging"));
-                    gridlines = Convert.ToBoolean(regkey.GetValue("EnableGridLines"));
-                    sortColumn = (int)regkey.GetValue("SortColumn");
-                    sortOrder = (SortOrder)regkey.GetValue("SortOrder");
-
-                    lstVMs.GridLines = gridlines;
-                    VMSort(sortColumn, sortOrder);
+                        InitializeDefaultSettings();
+                        SaveDefaultSettings();
+                    }
+                    else
+                    {
+                        exepath = (string)regkey.GetValue("EXEdir", DefaultExePath());
+                        cfgpath = (string)regkey.GetValue("CFGdir", DefaultCfgPath());
+                        minimize = Convert.ToBoolean(regkey.GetValue("MinimizeOnVMStart", 0));
+                        showConsole = Convert.ToBoolean(regkey.GetValue("ShowConsole", 1));
+                        minimizeTray = Convert.ToBoolean(regkey.GetValue("MinimizeToTray", 0));
+                        closeTray = Convert.ToBoolean(regkey.GetValue("CloseToTray", 0));
+                        logging = Convert.ToBoolean(regkey.GetValue("EnableLogging", 0));
+                        logpath = (string)regkey.GetValue("LogPath", "");
+                        gridlines = Convert.ToBoolean(regkey.GetValue("EnableGridLines", 0));
+                        sortColumn = (int)(regkey.GetValue("SortColumn", 0));
+                        sortOrder = (SortOrder)(regkey.GetValue("SortOrder", SortOrder.Ascending));
+                    }
                 }
 
-                regkey.Close();
+                lstVMs.GridLines = gridlines;
+                VMSort(sortColumn, sortOrder);
 
-                //To make sure there's a trailing backslash at the end, as other code using these strings expects it!
-                if (!exepath.EndsWith(@"\"))
-                {
-                    exepath += @"\";
-                }
-                if (!cfgpath.EndsWith(@"\"))
-                {
-                    cfgpath += @"\";
-                }
+                if (!exepath.EndsWith(@"\")) exepath += @"\";
+                if (!cfgpath.EndsWith(@"\")) cfgpath += @"\";
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occured trying to load the 86Box Manager registry keys and/or values. Make sure you have the required permissions and try again.\n\nException:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);                
+                MessageBox.Show(
+                    "An error occurred trying to load the 86Box Manager registry keys/values.\n\n" + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Application.Exit();
             }
+        }
+
+        private void SaveDefaultSettings()
+        {
+            using (var regkey = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\86Box"))
+            {
+                regkey.SetValue("EXEdir", exepath, RegistryValueKind.String);
+                regkey.SetValue("CFGdir", cfgpath, RegistryValueKind.String);
+                regkey.SetValue("MinimizeOnVMStart", minimize ? 1 : 0, RegistryValueKind.DWord);
+                regkey.SetValue("ShowConsole", showConsole ? 1 : 0, RegistryValueKind.DWord);
+                regkey.SetValue("MinimizeToTray", minimizeTray ? 1 : 0, RegistryValueKind.DWord);
+                regkey.SetValue("CloseToTray", closeTray ? 1 : 0, RegistryValueKind.DWord);
+                regkey.SetValue("EnableLogging", logging ? 1 : 0, RegistryValueKind.DWord);
+                regkey.SetValue("LogPath", logpath, RegistryValueKind.String);
+                regkey.SetValue("EnableGridLines", gridlines ? 1 : 0, RegistryValueKind.DWord);
+                regkey.SetValue("SortColumn", sortColumn, RegistryValueKind.DWord);
+                regkey.SetValue("SortOrder", (int)sortOrder, RegistryValueKind.DWord);
+
+                // make sure Virtual Machines subkey exists too
+                regkey.CreateSubKey("Virtual Machines");
+            }
+        }
+
+        private void InitializeDefaultSettings()
+        {
+            cfgpath = DefaultCfgPath();
+            exepath = DefaultExePath();
+            minimize = false;
+            showConsole = true;
+            minimizeTray = false;
+            closeTray = false;
+            logging = false;
+            logpath = "";
+            gridlines = false;
+            sortColumn = 0;
+            sortOrder = SortOrder.Ascending;
+
+            lstVMs.GridLines = false;
+            VMSort(sortColumn, sortOrder);
         }
 
         //Load the VMs from the registry
@@ -360,33 +433,36 @@ namespace _86boxManager
         {
             lstVMs.Items.Clear();
             VMCountRefresh();
+
             try
             {
-                using (RegistryKey regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box\Virtual Machines"))
+                using (var regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box\Virtual Machines"))
                 {
                     if (regkey == null)
                     {
                         MessageBox.Show(
-                            "The Virtual Machine registry not found. No stored virtual machines can be loaded!\n\nMake sure you have the required permissions and try again.",
-                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand
-                        );
-
+                            "The Virtual Machine registry key was not found. No stored VMs can be loaded.",
+                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
                     foreach (string valueName in regkey.GetValueNames())
                     {
+                        object value = regkey.GetValue(valueName);
+                        if (!(value is byte[]))
+                            continue;
+
+                        var rawData = (byte[])value;
+
                         try
                         {
-                            byte[] rawData = regkey.GetValue(valueName) as byte[];
-                            if (rawData == null)
-                                continue;
-
                             VM vm;
                             using (var ms = new MemoryStream(rawData))
                             {
+#pragma warning disable SYSLIB0011
                                 var bf = new BinaryFormatter();
                                 vm = (VM)bf.Deserialize(ms);
+#pragma warning restore SYSLIB0011
                             }
 
                             var newLvi = new ListViewItem(vm.Name)
@@ -394,7 +470,6 @@ namespace _86boxManager
                                 Tag = vm,
                                 ImageIndex = 0
                             };
-
                             newLvi.SubItems.Add(vm.GetStatusString());
                             newLvi.SubItems.Add(vm.Desc);
                             newLvi.SubItems.Add(vm.Path);
@@ -403,76 +478,79 @@ namespace _86boxManager
                         }
                         catch (Exception innerEx)
                         {
-                            MessageBox.Show($"Failed to load VM {valueName}: {innerEx.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                            MessageBox.Show($"Failed to load VM '{valueName}': {innerEx.Message}",
+                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                     }
                 }
 
-                // Reset selection and disable buttons
-                lstVMs.SelectedItems.Clear();
-                btnStart.Enabled = false;
-                btnPause.Enabled = false;
-                btnEdit.Enabled = false;
-                btnDelete.Enabled = false;
-                btnConfigure.Enabled = false;
-                btnCtrlAltDel.Enabled = false;
-                btnReset.Enabled = false;
-
+                ResetUIControls();
                 VMCountRefresh();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "An error occurred while loading virtual machines. Ensure you have the required permissions.\n\n" +
-                    ex.Message,
+                    "An error occurred while loading virtual machines.\n\n" + ex.Message,
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
+        private void ResetUIControls()
+        {
+            lstVMs.SelectedItems.Clear();
+            btnStart.Enabled = btnPause.Enabled = btnEdit.Enabled =
+                btnDelete.Enabled = btnConfigure.Enabled =
+                btnCtrlAltDel.Enabled = btnReset.Enabled = false;
+        }
 
         //Wait for the associated window of a VM to close
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            VM vm = e.Argument as VM;
+            var vm = e.Argument as VM;
             try
             {
-                Process p = Process.GetProcessById(vm.Pid); //Find the process associated with the VM
-                p.WaitForExit(); //Wait for it to exit
+                var p = Process.GetProcessById(vm.Pid);
+                p.WaitForExit();
+                e.Result = vm;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error has occurred. Please provide the following details to the developer:\n" + ex.Message + "\n" + ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                e.Result = ex; // pass exception to UI thread
             }
-            e.Result = vm;
         }
 
         //Update the UI once the VM's window is closed
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            VM vm = e.Result as VM;
+            if (e.Result is Exception ex)
+            {
+                MessageBox.Show("Error while monitoring VM:\n" + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
-            //Go through the listview, find the item representing the VM and update things accordingly
+            if (e.Result is VM vm)
+                UpdateVMStoppedUI(vm);
+        }
+
+        private void UpdateVMStoppedUI(VM vm)
+        {
             foreach (ListViewItem item in lstVMs.Items)
             {
-                if (item.Tag.Equals(vm))
+                if (!item.Tag.Equals(vm)) continue;
+
+                vm.Status = VM.STATUS_STOPPED;
+                vm.hWnd = IntPtr.Zero;
+                item.SubItems[1].Text = vm.GetStatusString();
+                item.ImageIndex = 0;
+
+                if (lstVMs.SelectedItems.Count > 0 && lstVMs.SelectedItems[0].Equals(item))
                 {
-                    vm.Status = VM.STATUS_STOPPED;
-                    vm.hWnd = IntPtr.Zero;
-                    item.SubItems[1].Text = vm.GetStatusString();
-                    item.ImageIndex = 0;
-                    if (lstVMs.SelectedItems.Count > 0 && lstVMs.SelectedItems[0].Equals(item))
-                    {
-                        btnEdit.Enabled = true;
-                        btnDelete.Enabled = true;
-                        btnStart.Enabled = true;
-                        btnStart.Text = "Start";
-                        toolTip.SetToolTip(btnStart, "Start this virtual machine");
-                        btnConfigure.Enabled = true;
-                        btnPause.Enabled = false;
-                        btnPause.Text = "Pause";
-                        btnCtrlAltDel.Enabled = false;
-                        btnReset.Enabled = false;
-                    }
+                    btnEdit.Enabled = btnDelete.Enabled = btnStart.Enabled = btnConfigure.Enabled = true;
+                    btnStart.Text = "Start";
+                    toolTip.SetToolTip(btnStart, "Start this virtual machine");
+                    btnPause.Enabled = btnCtrlAltDel.Enabled = btnReset.Enabled = false;
+                    btnPause.Text = "Pause";
                 }
             }
 
@@ -482,162 +560,81 @@ namespace _86boxManager
         //Enable/disable relevant menu items depending on selected VM's status
         private void cmsVM_Opening(object sender, CancelEventArgs e)
         {
-            //Available menu option differs based on the number of selected VMs
             if (lstVMs.SelectedItems.Count == 0)
             {
                 e.Cancel = true;
+                return;
             }
-            else if (lstVMs.SelectedItems.Count == 1)
+
+            if (lstVMs.SelectedItems.Count > 1)
             {
-                VM vm = (VM)lstVMs.SelectedItems[0].Tag;
-                switch (vm.Status)
-                {
-                    case VM.STATUS_RUNNING:
-                        {
-                            startToolStripMenuItem.Text = "Stop";
-                            startToolStripMenuItem.Enabled = true;
-                            startToolStripMenuItem.ToolTipText = "Stop this virtual machine";
-                            editToolStripMenuItem.Enabled = false;
-                            deleteToolStripMenuItem.Enabled = false;
-                            hardResetToolStripMenuItem.Enabled = true;
-                            resetCTRLALTDELETEToolStripMenuItem.Enabled = true;
-                            pauseToolStripMenuItem.Enabled = true;
-                            pauseToolStripMenuItem.Text = "Pause";
-                            configureToolStripMenuItem.Enabled = true;
-                        }
-                        break;
-                    case VM.STATUS_STOPPED:
-                        {
-                            startToolStripMenuItem.Text = "Start";
-                            startToolStripMenuItem.Enabled = true;
-                            startToolStripMenuItem.ToolTipText = "Start this virtual machine";
-                            editToolStripMenuItem.Enabled = true;
-                            deleteToolStripMenuItem.Enabled = true;
-                            hardResetToolStripMenuItem.Enabled = false;
-                            resetCTRLALTDELETEToolStripMenuItem.Enabled = false;
-                            pauseToolStripMenuItem.Enabled = false;
-                            pauseToolStripMenuItem.Text = "Pause";
-                            configureToolStripMenuItem.Enabled = true;
-                        }
-                        break;
-                    case VM.STATUS_WAITING:
-                        {
-                            startToolStripMenuItem.Enabled = false;
-                            startToolStripMenuItem.Text = "Stop";
-                            startToolStripMenuItem.ToolTipText = "Stop this virtual machine";
-                            editToolStripMenuItem.Enabled = false;
-                            deleteToolStripMenuItem.Enabled = false;
-                            hardResetToolStripMenuItem.Enabled = false;
-                            resetCTRLALTDELETEToolStripMenuItem.Enabled = false;
-                            pauseToolStripMenuItem.Enabled = false;
-                            pauseToolStripMenuItem.Text = "Pause";
-                            pauseToolStripMenuItem.ToolTipText = "Pause this virtual machine";
-                            configureToolStripMenuItem.Enabled = false;
-                        }
-                        break;
-                    case VM.STATUS_PAUSED:
-                        {
-                            startToolStripMenuItem.Enabled = true;
-                            startToolStripMenuItem.Text = "Stop";
-                            startToolStripMenuItem.ToolTipText = "Stop this virtual machine";
-                            editToolStripMenuItem.Enabled = false;
-                            deleteToolStripMenuItem.Enabled = false;
-                            hardResetToolStripMenuItem.Enabled = true;
-                            resetCTRLALTDELETEToolStripMenuItem.Enabled = true;
-                            pauseToolStripMenuItem.Enabled = true;
-                            pauseToolStripMenuItem.Text = "Resume";
-                            pauseToolStripMenuItem.ToolTipText = "Resume this virtual machine";
-                            configureToolStripMenuItem.Enabled = true;
-                        }
-                        break;
-                };
+                ConfigureContextMenuForMultiSelection();
+                return;
             }
-            //Multiple VMs selected => disable most options
-            else
-            {
-                startToolStripMenuItem.Text = "Start";
-                startToolStripMenuItem.Enabled = false;
-                startToolStripMenuItem.ToolTipText = "Start this virtual machine";
-                editToolStripMenuItem.Enabled = false;
-                deleteToolStripMenuItem.Enabled = true;
-                hardResetToolStripMenuItem.Enabled = false;
-                resetCTRLALTDELETEToolStripMenuItem.Enabled = false;
-                pauseToolStripMenuItem.Enabled = false;
-                pauseToolStripMenuItem.Text = "Pause";
-                killToolStripMenuItem.Enabled = true;
-                configureToolStripMenuItem.Enabled = false;
-                cloneToolStripMenuItem.Enabled = false;
-            }
+
+            VM vm = (VM)lstVMs.SelectedItems[0].Tag;
+            ConfigureContextMenuForVM(vm.Status);
         }
 
-        //Closing 86Box Manager before closing all the VMs can lead to weirdness if 86Box Manager is then restarted. So let's warn the user just in case and request confirmation.
-        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        private void ConfigureContextMenuForMultiSelection()
         {
-            int vmCount = 0; //Number of running VMs
+            startToolStripMenuItem.Text = "Start";
+            startToolStripMenuItem.Enabled = false;
+            editToolStripMenuItem.Enabled = false;
+            deleteToolStripMenuItem.Enabled = true;
+            hardResetToolStripMenuItem.Enabled = false;
+            resetCTRLALTDELETEToolStripMenuItem.Enabled = false;
+            pauseToolStripMenuItem.Enabled = false;
+            pauseToolStripMenuItem.Text = "Pause";
+            killToolStripMenuItem.Enabled = true;
+            configureToolStripMenuItem.Enabled = false;
+            cloneToolStripMenuItem.Enabled = false;
+        }
 
-            //Close to tray
-            if (e.CloseReason == CloseReason.UserClosing && closeTray)
+        private void ConfigureContextMenuForVM(int status)
+        {
+            // reset defaults
+            startToolStripMenuItem.Enabled = editToolStripMenuItem.Enabled =
+                deleteToolStripMenuItem.Enabled = hardResetToolStripMenuItem.Enabled =
+                resetCTRLALTDELETEToolStripMenuItem.Enabled = pauseToolStripMenuItem.Enabled =
+                configureToolStripMenuItem.Enabled = false;
+
+            switch (status)
             {
-                e.Cancel = true;
-                trayIcon.Visible = true;
-                WindowState = FormWindowState.Minimized;
-                Hide();
+                case VM.STATUS_RUNNING:
+                    startToolStripMenuItem.Text = "Stop";
+                    startToolStripMenuItem.Enabled = true;
+                    startToolStripMenuItem.ToolTipText = "Stop this virtual machine";
+                    hardResetToolStripMenuItem.Enabled = true;
+                    resetCTRLALTDELETEToolStripMenuItem.Enabled = true;
+                    pauseToolStripMenuItem.Enabled = true;
+                    pauseToolStripMenuItem.Text = "Pause";
+                    configureToolStripMenuItem.Enabled = true;
+                    break;
+
+                case VM.STATUS_STOPPED:
+                    startToolStripMenuItem.Text = "Start";
+                    startToolStripMenuItem.Enabled = true;
+                    startToolStripMenuItem.ToolTipText = "Start this virtual machine";
+                    editToolStripMenuItem.Enabled = deleteToolStripMenuItem.Enabled = true;
+                    configureToolStripMenuItem.Enabled = true;
+                    break;
+
+                case VM.STATUS_WAITING:
+                    startToolStripMenuItem.Text = "Stop";
+                    startToolStripMenuItem.ToolTipText = "Stop this virtual machine";
+                    break;
+
+                case VM.STATUS_PAUSED:
+                    startToolStripMenuItem.Text = "Stop";
+                    startToolStripMenuItem.ToolTipText = "Stop this virtual machine";
+                    hardResetToolStripMenuItem.Enabled = true;
+                    resetCTRLALTDELETEToolStripMenuItem.Enabled = true;
+                    pauseToolStripMenuItem.Enabled = true;
+                    pauseToolStripMenuItem.Text = "Resume";
+                    configureToolStripMenuItem.Enabled = true;
+                    break;
             }
-            else
-            {
-                foreach (ListViewItem item in lstVMs.Items)
-                {
-                    VM vm = (VM)item.Tag;
-                    if (vm.Status != VM.STATUS_STOPPED && Visible)
-                    {
-                        vmCount++;
-                    }
-                }
-            }
-
-            //If there are running VMs, display the warning and stop the VMs if user says so
-            if (vmCount > 0)
-            {
-                e.Cancel = true;
-                DialogResult = MessageBox.Show("Some virtual machines are still running. It's recommended you stop them first before closing 86Box Manager. Do you want to stop them now?", "Virtual machines are still running", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
-                if (DialogResult == DialogResult.Yes)
-                {
-                    foreach (ListViewItem lvi in lstVMs.Items)
-                    {
-                        lstVMs.SelectedItems.Clear(); //To prevent weird stuff
-                        VM vm = (VM)lvi.Tag;
-                        if (vm.Status != VM.STATUS_STOPPED)
-                        {
-                            lvi.Focused = true;
-                            lvi.Selected = true;
-                            VMForceStop(); //Tell the VM to shut down without confirmation
-                            Process p = Process.GetProcessById(vm.Pid);
-                            p.WaitForExit(500); //Wait 500 milliseconds for each VM to close
-                        }
-                    }
-
-                }
-                else if (DialogResult == DialogResult.Cancel)
-                {
-                    return;
-                }
-
-                e.Cancel = false;
-            }
-
-            //Save main window's state, size and position
-            //BUGBUG: Restoring these on startup causes anchor problems, so we're not doing it anymore...
-            /*Settings.Default.WindowState = WindowState;
-            Settings.Default.WindowSize = Size;
-            Settings.Default.WindowPosition = Location;*/
-
-            //Save listview column widths
-            Settings.Default.NameColWidth = clmName.Width;
-            Settings.Default.StatusColWidth = clmStatus.Width;
-            Settings.Default.DescColWidth = clmDesc.Width;
-            Settings.Default.PathColWidth = clmPath.Width;
-
-            Settings.Default.Save();
         }
 
         private void pauseToolStripMenuItem_Click(object sender, EventArgs e)
