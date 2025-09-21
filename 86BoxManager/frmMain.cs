@@ -770,11 +770,11 @@ namespace _86boxManager
             }
             catch (InvalidOperationException ex)
             {
-                MessageBox.Show("The process failed to initialize or its window handle could not be obtained.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"The process failed to initialize or its window handle could not be obtained.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Win32Exception ex)
             {
-                MessageBox.Show("Cannot find 86Box.exe. Make sure your settings are correct and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Cannot find 86Box.exe. Make sure your settings are correct and try again.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
@@ -798,7 +798,7 @@ namespace _86boxManager
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred trying to stop the selected virtual machine.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"An error occurred trying to stop the selected virtual machine.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             VMSort(sortColumn, sortOrder);
@@ -819,7 +819,7 @@ namespace _86boxManager
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred trying to stop the selected virtual machine.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"An error occurred trying to stop the selected virtual machine.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             VMSort(sortColumn, sortOrder);
@@ -906,7 +906,7 @@ namespace _86boxManager
                 }
                 catch (Win32Exception ex)
                 {
-                    MessageBox.Show("Cannot find 86Box.exe. Make sure your settings are correct and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Cannot find 86Box.exe. Make sure your settings are correct and try again.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch (Exception ex)
                 {
@@ -1061,7 +1061,7 @@ namespace _86boxManager
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("An error has occurred while trying to move the files for this virtual machine. Please try to move them manually.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"An error has occurred while trying to move the files for this virtual machine. Please try to move them manually.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 vm.Name = name;
                 vm.Path = cfgpath + vm.Name;
@@ -1435,7 +1435,7 @@ namespace _86boxManager
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("The folder for the virtual machine \"" + vm.Name + "\" could not be opened. Make sure it still exists and that you have sufficient privileges to access it.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("The folder for the virtual machine \"" + vm.Name + $"\" could not be opened. Make sure it still exists and that you have sufficient privileges to access it.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -1460,7 +1460,7 @@ namespace _86boxManager
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("A desktop shortcut for the virtual machine \"" + vm.Name + "\" could not be created.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("A desktop shortcut for the virtual machine \"" + vm.Name + $"\" could not be created.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -1588,7 +1588,7 @@ namespace _86boxManager
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Could not kill 86Box.exe process for virtual machine \"" + vm.Name + "\". The process may have already ended on its own or access was denied.", "Could not kill process", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Could not kill 86Box.exe process for virtual machine \"" + vm.Name + $"\". The process may have already ended on its own or access was denied.\n\nException:\n\n{ex.Message}", "Could not kill process", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         continue;
                     }
 
@@ -1676,7 +1676,7 @@ namespace _86boxManager
             }
             catch(Exception ex)
             {
-                MessageBox.Show("Could not save the column sorting state to the registry. Make sure you have the required permissions and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Could not save the column sorting state to the registry. Make sure you have the required permissions and try again.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -1721,7 +1721,7 @@ namespace _86boxManager
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("An error occurred trying to wipe the virtual machine \"" + vm.Name + "\".", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("An error occurred trying to wipe the virtual machine \"" + vm.Name + $"\".\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         continue;
                     }
                 }
@@ -1732,6 +1732,9 @@ namespace _86boxManager
         public void VMImport(string name, string desc, string importPath, bool openCFG, bool startVM)
         {
             VM newVM = new VM(name, desc, cfgpath + name);
+
+            string exceptionString = "";
+
             ListViewItem newLvi = new ListViewItem(newVM.Name)
             {
                 Tag = newVM,
@@ -1760,6 +1763,7 @@ namespace _86boxManager
             catch (Exception ex)
             {
                 importFailed = true; //Set this flag so we can inform the user at the end
+                exceptionString = ex.Message;
             }
 
             using (var ms = new MemoryStream())
@@ -1773,7 +1777,7 @@ namespace _86boxManager
 
             if (importFailed)
             {
-                MessageBox.Show("Virtual machine \"" + newVM.Name + "\" was successfully created, but files could not be imported. Make sure the path you selected was correct and valid.\n\nIf the VM is already located in your VMs folder, you don't need to select the Import option, just add a new VM with the same name.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Virtual machine \"" + newVM.Name + $"\" was successfully created, but files could not be imported. Make sure the path you selected was correct and valid.\n\nIf the VM is already located in your VMs folder, you don't need to select the Import option, just add a new VM with the same name.\n\nException:\n\n{exceptionString}", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             else
             {
@@ -1849,7 +1853,7 @@ namespace _86boxManager
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("The config file for the virtual machine \"" + vm.Name + "\" could not be opened. Make sure it still exists and that you have sufficient privileges to access it.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("The config file for the virtual machine \"" + vm.Name + $"\" could not be opened. Make sure it still exists and that you have sufficient privileges to access it.\n\nException:\n\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

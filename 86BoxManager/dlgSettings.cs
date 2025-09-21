@@ -58,7 +58,7 @@ namespace _86boxManager
             LoadSettings();
             Get86BoxVersion();
 
-            lblVersion1.Text = Application.ProductVersion.Substring(0, Application.ProductVersion.Length - 2);
+            lblVersion1.Text = Application.ProductVersion.Substring(0, Application.ProductVersion.Length);
 
             #if DEBUG
                 lblVersion1.Text += " (Debug)";
@@ -145,7 +145,7 @@ namespace _86boxManager
             }
             catch(FileNotFoundException ex)
             {
-                lbl86BoxVer1.Text = "86Box.exe not found";
+                lbl86BoxVer1.Text = $"86Box.exe not found ({ex.Message})";
                 lbl86BoxVer1.ForeColor = Color.Gray;
             }
         }
@@ -257,7 +257,7 @@ namespace _86boxManager
             }
             catch (Exception ex)
             {
-                MessageBox.Show("86Box Manager settings could not be loaded, because an error occured trying to load the registry keys and/or values. Make sure you have the required permissions and try again. Default values will be used now.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show($"86Box Manager settings could not be loaded, because an error occured trying to load the registry keys and/or values. Make sure you have the required permissions and try again. Default values will be used now.\n\nException:\n\n{ex.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                 txtCFGdir.Text = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\86Box VMs";
                 txtEXEdir.Text = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) + @"\86Box";
