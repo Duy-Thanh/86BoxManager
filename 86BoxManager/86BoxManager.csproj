@@ -192,6 +192,7 @@
     </Compile>
     <Compile Include="FolderSelectDialog.cs" />
     <Compile Include="ListViewItemComparer.cs" />
+    <Compile Include="SharedPreferences.cs" />
     <Compile Include="VM.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>

@@ -33,6 +33,31 @@ namespace _86boxManager
             public IntPtr lpData;
         }
 
+        // The enum flag for DwmSetWindowAttribute's second parameter, which tells the function what attribute to set.
+        // Copied from dwmapi.h
+        public enum DWMWINDOWATTRIBUTE
+        {
+            DWMWA_WINDOW_CORNER_PREFERENCE = 33
+        }
+
+        // The DWM_WINDOW_CORNER_PREFERENCE enum for DwmSetWindowAttribute's third parameter, which tells the function
+        // what value of the enum to set.
+        // Copied from dwmapi.h
+        public enum DWM_WINDOW_CORNER_PREFERENCE
+        {
+            DWMWCP_DEFAULT = 0,
+            DWMWCP_DONOTROUND = 1,
+            DWMWCP_ROUND = 2,
+            DWMWCP_ROUNDSMALL = 3
+        }
+
+        // Import dwmapi.dll and define DwmSetWindowAttribute in C# corresponding to the native function.
+        [DllImport("dwmapi.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        internal static extern void DwmSetWindowAttribute(IntPtr hwnd,
+                                                         DWMWINDOWATTRIBUTE attribute,
+                                                         ref DWM_WINDOW_CORNER_PREFERENCE pvAttribute,
+                                                         uint cbAttribute);
+
         //private static RegistryKey regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box", true); //Registry key for accessing the settings and VM list
         public string exepath = ""; //Path to 86box.exe and the romset
         public string cfgpath = ""; //Path to the virtual machines folder (configs, nvrs, etc.)
@@ -50,6 +75,28 @@ namespace _86boxManager
         public frmMain()
         {
             InitializeComponent();
+
+            if (SharedPreferences.IsWindows11)
+            {
+                var attribute = DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE;
+                var preference = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
+                DwmSetWindowAttribute(this.Handle,
+                    attribute, ref preference, sizeof(uint));
+            }
+
+            this.FormClosing += FrmMain_FormClosing;
+        }
+
+        private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (MessageBox.Show("You are closing 86BoxManager.\n\nAny changes you made will be lost. Please save your changes before exiting 86BoxManager\n\nDo you want to exit 86BoxManager?", "Exit 86BoxManager", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                e.Cancel = false;
+            }
+            else
+            {
+                e.Cancel = true;
+            }
         }
 
         private void frmMain_Load(object sender, EventArgs e)
@@ -70,16 +117,12 @@ namespace _86boxManager
             clmPath.Width = Settings.Default.PathColWidth;
 
             //Convert the current window handle to a form that's expected by 86Box
-            hWndHex = string.Format("{0:X}", Handle.ToInt64());
-            hWndHex = hWndHex.PadLeft(16, '0');
+            hWndHex = Handle.ToInt64().ToString("X16");
 
             //Check if command line arguments for starting a VM are OK
-            if (Program.args.Length == 3 && Program.args[1] == "-S" && Program.args[2] != null)
+            if (Program.args.Length == 3 && Program.args[1] == "-S")
             {
-                //Find the VM with given name
-                ListViewItem lvi = lstVMs.FindItemWithText(Program.args[2], false, 0, false);
-
-                //Then select and start it if it's found
+                var lvi = lstVMs.FindItemWithText(Program.args[2], false, 0, false);
                 if (lvi != null)
                 {
                     lvi.Focused = true;
@@ -88,21 +131,31 @@ namespace _86boxManager
                 }
                 else
                 {
-                    MessageBox.Show("The virtual machine \"" + Program.args[2] + "\" could not be found. It may have been removed or the specified name is incorrect.", "Virtual machine not found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(
+                        $"The virtual machine \"{Program.args[2]}\" could not be found.\nIt may have been removed or the specified name is incorrect.",
+                        "Virtual machine not found",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
                 }
             }
         }
 
         private void btnStart_Click(object sender, EventArgs e)
         {
+            if (lstVMs.SelectedItems.Count == 0) return;
+
             VM vm = (VM)lstVMs.SelectedItems[0].Tag;
-            if (vm.Status == VM.STATUS_STOPPED)
+            switch (vm.Status)
             {
-                VMStart();
-            }
-            else if (vm.Status == VM.STATUS_RUNNING || vm.Status == VM.STATUS_PAUSED)
-            {
-                VMRequestStop();
+                case VM.STATUS_STOPPED:
+                    VMStart();
+                    break;
+
+                case VM.STATUS_RUNNING:
+                case VM.STATUS_PAUSED:
+                    VMRequestStop();
+                    break;
             }
         }
 
@@ -121,83 +174,87 @@ namespace _86boxManager
 
         private void lstVMs_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //Disable relevant buttons if no VM is selected
             if (lstVMs.SelectedItems.Count == 0)
             {
-                btnConfigure.Enabled = false;
-                btnStart.Enabled = false;
-                btnEdit.Enabled = false;
-                btnDelete.Enabled = false;
-                btnReset.Enabled = false;
-                btnCtrlAltDel.Enabled = false;
-                btnPause.Enabled = false;
+                UpdateUIForNoSelection();
+                return;
             }
-            else if (lstVMs.SelectedItems.Count == 1)
+
+            if (lstVMs.SelectedItems.Count > 1)
             {
-                //Disable relevant buttons if VM is running
-                VM vm = (VM)lstVMs.SelectedItems[0].Tag;
-                if (vm.Status == VM.STATUS_RUNNING)
-                {
+                UpdateUIForMultiSelection();
+                return;
+            }
+
+            VM vm = (VM)lstVMs.SelectedItems[0].Tag;
+            UpdateUIForVMStatus(vm.Status);
+        }
+
+        private void UpdateUIForNoSelection()
+        {
+            btnConfigure.Enabled = false;
+            btnStart.Enabled = false;
+            btnEdit.Enabled = false;
+            btnDelete.Enabled = false;
+            btnReset.Enabled = false;
+            btnCtrlAltDel.Enabled = false;
+            btnPause.Enabled = false;
+        }
+
+        private void UpdateUIForMultiSelection()
+        {
+            btnConfigure.Enabled = false;
+            btnStart.Enabled = false;
+            btnEdit.Enabled = false;
+            btnDelete.Enabled = true;
+            btnReset.Enabled = false;
+            btnCtrlAltDel.Enabled = false;
+            btnPause.Enabled = false;
+        }
+
+        private void UpdateUIForVMStatus(int status)
+        {
+            // Default disable
+            UpdateUIForNoSelection();
+
+            switch (status)
+            {
+                case VM.STATUS_RUNNING:
                     btnStart.Enabled = true;
                     btnStart.Text = "Stop";
                     toolTip.SetToolTip(btnStart, "Stop this virtual machine");
-                    btnEdit.Enabled = false;
-                    btnDelete.Enabled = false;
                     btnConfigure.Enabled = true;
                     btnPause.Enabled = true;
                     btnPause.Text = "Pause";
                     btnReset.Enabled = true;
                     btnCtrlAltDel.Enabled = true;
-                }
-                else if (vm.Status == VM.STATUS_STOPPED)
-                {
+                    break;
+
+                case VM.STATUS_STOPPED:
                     btnStart.Enabled = true;
                     btnStart.Text = "Start";
                     toolTip.SetToolTip(btnStart, "Start this virtual machine");
                     btnEdit.Enabled = true;
                     btnDelete.Enabled = true;
                     btnConfigure.Enabled = true;
-                    btnPause.Enabled = false;
-                    btnPause.Text = "Pause";
-                    btnReset.Enabled = false;
-                    btnCtrlAltDel.Enabled = false;
-                }
-                else if (vm.Status == VM.STATUS_PAUSED)
-                {
+                    break;
+
+                case VM.STATUS_PAUSED:
                     btnStart.Enabled = true;
                     btnStart.Text = "Stop";
                     toolTip.SetToolTip(btnStart, "Stop this virtual machine");
-                    btnEdit.Enabled = false;
-                    btnDelete.Enabled = false;
                     btnConfigure.Enabled = true;
                     btnPause.Enabled = true;
                     btnPause.Text = "Resume";
                     btnReset.Enabled = true;
                     btnCtrlAltDel.Enabled = true;
-                }
-                else if (vm.Status == VM.STATUS_WAITING)
-                {
+                    break;
+
+                case VM.STATUS_WAITING:
                     btnStart.Enabled = false;
                     btnStart.Text = "Stop";
                     toolTip.SetToolTip(btnStart, "Stop this virtual machine");
-                    btnEdit.Enabled = false;
-                    btnDelete.Enabled = false;
-                    btnReset.Enabled = false;
-                    btnCtrlAltDel.Enabled = false;
-                    btnPause.Enabled = false;
-                    btnPause.Text = "Pause";
-                    btnConfigure.Enabled = false;
-                }
-            }
-            else
-            {
-                btnConfigure.Enabled = false;
-                btnStart.Enabled = false;
-                btnEdit.Enabled = false;
-                btnDelete.Enabled = true;
-                btnReset.Enabled = false;
-                btnCtrlAltDel.Enabled = false;
-                btnPause.Enabled = false;
+                    break;
             }
         }
 
@@ -293,12 +350,11 @@ namespace _86boxManager
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occured trying to load the 86Box Manager registry keys and/or values. Make sure you have the required permissions and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);                
+                MessageBox.Show("An error occured trying to load the 86Box Manager registry keys and/or values. Make sure you have the required permissions and try again.\n\nException:\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);                
                 Application.Exit();
             }
         }
 
-        //TODO: Rewrite
         //Load the VMs from the registry
         private void LoadVMs()
         {
@@ -306,27 +362,53 @@ namespace _86boxManager
             VMCountRefresh();
             try
             {
-                RegistryKey regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box\Virtual Machines");
-                VM vm = new VM();
-
-                foreach (var value in regkey.GetValueNames())
+                using (RegistryKey regkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\86Box\Virtual Machines"))
                 {
-                    MemoryStream ms = new MemoryStream((byte[])regkey.GetValue(value));
-                    BinaryFormatter bf = new BinaryFormatter();
-                    vm = (VM)bf.Deserialize(ms);
-                    ms.Close();
-
-                    ListViewItem newLvi = new ListViewItem(vm.Name)
+                    if (regkey == null)
                     {
-                        Tag = vm,
-                        ImageIndex = 0
-                    };
-                    newLvi.SubItems.Add(new ListViewItem.ListViewSubItem(newLvi, vm.GetStatusString()));
-                    newLvi.SubItems.Add(new ListViewItem.ListViewSubItem(newLvi, vm.Desc));
-                    newLvi.SubItems.Add(new ListViewItem.ListViewSubItem(newLvi, vm.Path));
-                    lstVMs.Items.Add(newLvi);
+                        MessageBox.Show(
+                            "The Virtual Machine registry not found. No stored virtual machines can be loaded!\n\nMake sure you have the required permissions and try again.",
+                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand
+                        );
+
+                        return;
+                    }
+
+                    foreach (string valueName in regkey.GetValueNames())
+                    {
+                        try
+                        {
+                            byte[] rawData = regkey.GetValue(valueName) as byte[];
+                            if (rawData == null)
+                                continue;
+
+                            VM vm;
+                            using (var ms = new MemoryStream(rawData))
+                            {
+                                var bf = new BinaryFormatter();
+                                vm = (VM)bf.Deserialize(ms);
+                            }
+
+                            var newLvi = new ListViewItem(vm.Name)
+                            {
+                                Tag = vm,
+                                ImageIndex = 0
+                            };
+
+                            newLvi.SubItems.Add(vm.GetStatusString());
+                            newLvi.SubItems.Add(vm.Desc);
+                            newLvi.SubItems.Add(vm.Path);
+
+                            lstVMs.Items.Add(newLvi);
+                        }
+                        catch (Exception innerEx)
+                        {
+                            MessageBox.Show($"Failed to load VM {valueName}: {innerEx.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                        }
+                    }
                 }
 
+                // Reset selection and disable buttons
                 lstVMs.SelectedItems.Clear();
                 btnStart.Enabled = false;
                 btnPause.Enabled = false;
@@ -340,9 +422,13 @@ namespace _86boxManager
             }
             catch (Exception ex)
             {
-                MessageBox.Show("The Virtual Machines registry key could not be opened, so no stored virtual machines can be used. Make sure you have the required permissions and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    "An error occurred while loading virtual machines. Ensure you have the required permissions.\n\n" +
+                    ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         //Wait for the associated window of a VM to close
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
