@@ -59,6 +59,7 @@
             this.gbxMisc = new System.Windows.Forms.GroupBox();
             this.cbxGrid = new System.Windows.Forms.CheckBox();
             this.tabAbout = new System.Windows.Forms.TabPage();
+            this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.lnkGithub = new System.Windows.Forms.LinkLabel();
             this.imgLogo = new System.Windows.Forms.PictureBox();
             this.lblVersion1 = new System.Windows.Forms.Label();
@@ -156,7 +157,7 @@
             this.pnlBottom.Controls.Add(this.btnCancel);
             this.pnlBottom.Controls.Add(this.btnOK);
             this.pnlBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlBottom.Location = new System.Drawing.Point(0, 284);
+            this.pnlBottom.Location = new System.Drawing.Point(0, 323);
             this.pnlBottom.Margin = new System.Windows.Forms.Padding(2);
             this.pnlBottom.Name = "pnlBottom";
             this.pnlBottom.Size = new System.Drawing.Size(709, 52);
@@ -170,7 +171,7 @@
             this.tbcSettings.Location = new System.Drawing.Point(12, 12);
             this.tbcSettings.Name = "tbcSettings";
             this.tbcSettings.SelectedIndex = 0;
-            this.tbcSettings.Size = new System.Drawing.Size(689, 263);
+            this.tbcSettings.Size = new System.Drawing.Size(689, 306);
             this.tbcSettings.TabIndex = 0;
             // 
             // tabGeneral
@@ -179,8 +180,8 @@
             this.tabGeneral.Controls.Add(this.gbxPaths);
             this.tabGeneral.Location = new System.Drawing.Point(4, 26);
             this.tabGeneral.Name = "tabGeneral";
-            this.tabGeneral.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
-            this.tabGeneral.Size = new System.Drawing.Size(681, 233);
+            this.tabGeneral.Padding = new System.Windows.Forms.Padding(3);
+            this.tabGeneral.Size = new System.Drawing.Size(681, 276);
             this.tabGeneral.TabIndex = 0;
             this.tabGeneral.Text = "General";
             this.tabGeneral.UseVisualStyleBackColor = true;
@@ -190,9 +191,9 @@
             this.gbxBehaviour.Controls.Add(this.cbxMinimizeTray);
             this.gbxBehaviour.Controls.Add(this.cbxCloseTray);
             this.gbxBehaviour.Controls.Add(this.cbxMinimize);
-            this.gbxBehaviour.Location = new System.Drawing.Point(6, 141);
+            this.gbxBehaviour.Location = new System.Drawing.Point(6, 148);
             this.gbxBehaviour.Name = "gbxBehaviour";
-            this.gbxBehaviour.Size = new System.Drawing.Size(669, 86);
+            this.gbxBehaviour.Size = new System.Drawing.Size(669, 122);
             this.gbxBehaviour.TabIndex = 6;
             this.gbxBehaviour.TabStop = false;
             this.gbxBehaviour.Text = "Behaviour";
@@ -248,7 +249,7 @@
             this.gbxPaths.Controls.Add(this.btnBrowse1);
             this.gbxPaths.Location = new System.Drawing.Point(6, 6);
             this.gbxPaths.Name = "gbxPaths";
-            this.gbxPaths.Size = new System.Drawing.Size(669, 129);
+            this.gbxPaths.Size = new System.Drawing.Size(669, 136);
             this.gbxPaths.TabIndex = 5;
             this.gbxPaths.TabStop = false;
             this.gbxPaths.Text = "Paths";
@@ -344,8 +345,8 @@
             this.tabAdvanced.Controls.Add(this.gbxMisc);
             this.tabAdvanced.Location = new System.Drawing.Point(4, 26);
             this.tabAdvanced.Name = "tabAdvanced";
-            this.tabAdvanced.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
-            this.tabAdvanced.Size = new System.Drawing.Size(681, 233);
+            this.tabAdvanced.Padding = new System.Windows.Forms.Padding(3);
+            this.tabAdvanced.Size = new System.Drawing.Size(681, 276);
             this.tabAdvanced.TabIndex = 1;
             this.tabAdvanced.Text = "Advanced";
             this.tabAdvanced.UseVisualStyleBackColor = true;
@@ -421,6 +422,7 @@
             // 
             // tabAbout
             // 
+            this.tabAbout.Controls.Add(this.linkLabel1);
             this.tabAbout.Controls.Add(this.lnkGithub);
             this.tabAbout.Controls.Add(this.imgLogo);
             this.tabAbout.Controls.Add(this.lblVersion1);
@@ -431,17 +433,29 @@
             this.tabAbout.Controls.Add(this.lblTitle);
             this.tabAbout.Location = new System.Drawing.Point(4, 26);
             this.tabAbout.Name = "tabAbout";
-            this.tabAbout.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
-            this.tabAbout.Size = new System.Drawing.Size(681, 233);
+            this.tabAbout.Padding = new System.Windows.Forms.Padding(3);
+            this.tabAbout.Size = new System.Drawing.Size(681, 276);
             this.tabAbout.TabIndex = 2;
             this.tabAbout.Text = "About";
             this.tabAbout.UseVisualStyleBackColor = true;
+            // 
+            // linkLabel1
+            // 
+            this.linkLabel1.AutoSize = true;
+            this.linkLabel1.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.linkLabel1.Location = new System.Drawing.Point(15, 240);
+            this.linkLabel1.Name = "linkLabel1";
+            this.linkLabel1.Size = new System.Drawing.Size(295, 19);
+            this.linkLabel1.TabIndex = 18;
+            this.linkLabel1.TabStop = true;
+            this.linkLabel1.Text = "https://github.com/Duy-Thanh/86BoxManager";
+            this.linkLabel1.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel1_LinkClicked);
             // 
             // lnkGithub
             // 
             this.lnkGithub.AutoSize = true;
             this.lnkGithub.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.lnkGithub.Location = new System.Drawing.Point(15, 200);
+            this.lnkGithub.Location = new System.Drawing.Point(15, 216);
             this.lnkGithub.Name = "lnkGithub";
             this.lnkGithub.Size = new System.Drawing.Size(264, 19);
             this.lnkGithub.TabIndex = 12;
@@ -474,7 +488,7 @@
             // 
             this.lnkGithub2.AutoSize = true;
             this.lnkGithub2.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.lnkGithub2.Location = new System.Drawing.Point(15, 177);
+            this.lnkGithub2.Location = new System.Drawing.Point(15, 193);
             this.lnkGithub2.Name = "lnkGithub2";
             this.lnkGithub2.Size = new System.Drawing.Size(209, 19);
             this.lnkGithub2.TabIndex = 10;
@@ -488,10 +502,9 @@
             this.lblCopyright.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.lblCopyright.Location = new System.Drawing.Point(15, 111);
             this.lblCopyright.Name = "lblCopyright";
-            this.lblCopyright.Size = new System.Drawing.Size(368, 57);
+            this.lblCopyright.Size = new System.Drawing.Size(384, 76);
             this.lblCopyright.TabIndex = 15;
-            this.lblCopyright.Text = "Copyright © 2018-2024 David Simunič\r\nLicensed under the MIT license. See the LICE" +
-    "NSE file for\r\nlicense information and AUTHORS for a list of contributors.";
+            this.lblCopyright.Text = resources.GetString("lblCopyright.Text");
             // 
             // lblVersion
             // 
@@ -531,7 +544,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.BackColor = System.Drawing.SystemColors.Window;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(709, 336);
+            this.ClientSize = new System.Drawing.Size(709, 375);
             this.Controls.Add(this.tbcSettings);
             this.Controls.Add(this.pnlBottom);
             this.Font = new System.Drawing.Font("Segoe UI", 10F);
@@ -605,5 +618,6 @@
         private System.Windows.Forms.Label lblVersion;
         private System.Windows.Forms.Label lblDesc;
         private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.LinkLabel linkLabel1;
     }
 }

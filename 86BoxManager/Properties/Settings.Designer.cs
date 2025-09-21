@@ -107,7 +107,7 @@ namespace _86boxManager.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024, 2025 David Simunič and others and Nguyen Duy Thanh (@Nekko" +
             "chan0x0007)")]
@@ -115,12 +115,9 @@ namespace _86boxManager.Properties {
             get {
                 return ((string)(this["Copyright"]));
             }
-            set {
-                this["Copyright"] = value;
-            }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024, 2025 David Simunič and others and Nguyen Duy Thanh (@Nekko" +
             "chan0x0007)")]
@@ -128,8 +125,14 @@ namespace _86boxManager.Properties {
             get {
                 return ((string)(this["Trademark"]));
             }
-            set {
-                this["Trademark"] = value;
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("86BoxManager")]
+        public string AppName {
+            get {
+                return ((string)(this["AppName"]));
             }
         }
     }
