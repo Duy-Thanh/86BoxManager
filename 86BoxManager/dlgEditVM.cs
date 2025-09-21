@@ -40,6 +40,7 @@ namespace _86boxManager
         public dlgEditVM()
         {
             InitializeComponent();
+
             if (SharedPreferences.IsWindows11)
             {
                 var attribute = DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE;
