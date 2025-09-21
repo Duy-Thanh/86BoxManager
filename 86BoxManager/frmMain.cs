@@ -93,19 +93,19 @@ namespace _86boxManager
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (MessageBox.Show("You are closing 86BoxManager.\n\nAny changes you made will be lost. Please save your changes before exiting 86BoxManager\n\nDo you want to exit 86BoxManager?", "Exit 86BoxManager", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                int vmCount = 0; //Number of running VMs
+            int vmCount = 0; //Number of running VMs
 
-                //Close to tray
-                if (e.CloseReason == CloseReason.UserClosing && closeTray)
-                {
-                    e.Cancel = true;
-                    trayIcon.Visible = true;
-                    WindowState = FormWindowState.Minimized;
-                    Hide();
-                }
-                else
+            //Close to tray
+            if (e.CloseReason == CloseReason.UserClosing && closeTray)
+            {
+                e.Cancel = true;
+                trayIcon.Visible = true;
+                WindowState = FormWindowState.Minimized;
+                Hide();
+            }
+            else
+            {
+                if (MessageBox.Show("You are closing 86BoxManager.\n\nAny changes you made will be lost. Please save your changes before exiting 86BoxManager\n\nDo you want to exit 86BoxManager?", "Exit 86BoxManager", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     foreach (ListViewItem item in lstVMs.Items)
                     {
@@ -115,57 +115,57 @@ namespace _86boxManager
                             vmCount++;
                         }
                     }
-                }
 
-                //If there are running VMs, display the warning and stop the VMs if user says so
-                if (vmCount > 0)
-                {
-                    e.Cancel = true;
-                    DialogResult = MessageBox.Show("Some virtual machines are still running. It's recommended you stop them first before closing 86Box Manager. Do you want to stop them now?", "Virtual machines are still running", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
-                    if (DialogResult == DialogResult.Yes)
+                    //If there are running VMs, display the warning and stop the VMs if user says so
+                    if (vmCount > 0)
                     {
-                        foreach (ListViewItem lvi in lstVMs.Items)
+                        e.Cancel = true;
+                        DialogResult = MessageBox.Show("Some virtual machines are still running. It's recommended you stop them first before closing 86Box Manager. Do you want to stop them now?", "Virtual machines are still running", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                        if (DialogResult == DialogResult.Yes)
                         {
-                            lstVMs.SelectedItems.Clear(); //To prevent weird stuff
-                            VM vm = (VM)lvi.Tag;
-                            if (vm.Status != VM.STATUS_STOPPED)
+                            foreach (ListViewItem lvi in lstVMs.Items)
                             {
-                                lvi.Focused = true;
-                                lvi.Selected = true;
-                                VMForceStop(); //Tell the VM to shut down without confirmation
-                                Process p = Process.GetProcessById(vm.Pid);
-                                p.WaitForExit(500); //Wait 500 milliseconds for each VM to close
+                                lstVMs.SelectedItems.Clear(); //To prevent weird stuff
+                                VM vm = (VM)lvi.Tag;
+                                if (vm.Status != VM.STATUS_STOPPED)
+                                {
+                                    lvi.Focused = true;
+                                    lvi.Selected = true;
+                                    VMForceStop(); //Tell the VM to shut down without confirmation
+                                    Process p = Process.GetProcessById(vm.Pid);
+                                    p.WaitForExit(500); //Wait 500 milliseconds for each VM to close
+                                }
                             }
+
+                        }
+                        else if (DialogResult == DialogResult.Cancel)
+                        {
+                            return;
                         }
 
+                        e.Cancel = false;
                     }
-                    else if (DialogResult == DialogResult.Cancel)
-                    {
-                        return;
-                    }
+
+                    //Save main window's state, size and position
+                    //BUGBUG: Restoring these on startup causes anchor problems, so we're not doing it anymore...
+                    /*Settings.Default.WindowState = WindowState;
+                    Settings.Default.WindowSize = Size;
+                    Settings.Default.WindowPosition = Location;*/
+
+                    //Save listview column widths
+                    Settings.Default.NameColWidth = clmName.Width;
+                    Settings.Default.StatusColWidth = clmStatus.Width;
+                    Settings.Default.DescColWidth = clmDesc.Width;
+                    Settings.Default.PathColWidth = clmPath.Width;
+
+                    Settings.Default.Save();
 
                     e.Cancel = false;
                 }
-
-                //Save main window's state, size and position
-                //BUGBUG: Restoring these on startup causes anchor problems, so we're not doing it anymore...
-                /*Settings.Default.WindowState = WindowState;
-                Settings.Default.WindowSize = Size;
-                Settings.Default.WindowPosition = Location;*/
-
-                //Save listview column widths
-                Settings.Default.NameColWidth = clmName.Width;
-                Settings.Default.StatusColWidth = clmStatus.Width;
-                Settings.Default.DescColWidth = clmDesc.Width;
-                Settings.Default.PathColWidth = clmPath.Width;
-
-                Settings.Default.Save();
-
-                e.Cancel = false;
-            }
-            else
-            {
-                e.Cancel = true;
+                else
+                {
+                    e.Cancel = true;
+                }
             }
         }
 
