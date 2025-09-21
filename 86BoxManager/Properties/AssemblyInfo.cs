@@ -9,8 +9,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)")]
 [assembly: AssemblyProduct("86Box Manager")]
-[assembly: AssemblyCopyright("Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)")]
-[assembly: AssemblyTrademark("Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)")]
+[assembly: AssemblyCopyright("Copyright © 2018-2024, 2025 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)")]
+[assembly: AssemblyTrademark("Copyright © 2018-2024, 2025 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x0007)")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible

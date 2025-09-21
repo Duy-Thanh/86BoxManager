@@ -109,8 +109,8 @@ namespace _86boxManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x" +
-            "0007)")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024, 2025 David Simunič and others and Nguyen Duy Thanh (@Nekko" +
+            "chan0x0007)")]
         public string Copyright {
             get {
                 return ((string)(this["Copyright"]));
@@ -122,8 +122,8 @@ namespace _86boxManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024 David Simunič and others and Nguyen Duy Thanh (@Nekkochan0x" +
-            "0007)")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Copyright © 2018-2024, 2025 David Simunič and others and Nguyen Duy Thanh (@Nekko" +
+            "chan0x0007)")]
         public string Trademark {
             get {
                 return ((string)(this["Trademark"]));
